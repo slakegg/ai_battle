@@ -50,7 +50,7 @@ module.exports = async function handler(req, res) {
     if (model === "arbiter") {
       const GROQ_KEY = process.env.GROQ_API_KEY;
       const body = {
-        model: "mixtral-8x7b-32768",
+        model: "llama-3.1-8b-instant",
         messages: [...(system ? [{ role: "system", content: system }] : []), ...messages],
         max_tokens: 600,
         temperature: 0.3,
