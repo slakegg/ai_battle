@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
       }));
       const lastMsg = messages[messages.length - 1].content;
       const body = {
-        model: "command-a-03-2025",
+        model: "command-r7b-12-2024",
         preamble: system || "",
         chat_history: history,
         message: lastMsg,
