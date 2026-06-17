@@ -1,0 +1,12 @@
+{
+  "name": "botva-battle",
+  "version": "1.0.0",
+  "description": "AI vs AI debate app — Gemini vs Grok with Claude Haiku as arbiter",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
+  }
+}

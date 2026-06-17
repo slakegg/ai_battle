@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ботва-Баттл ⚡ AI vs AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --cohere: #4f8ef7;
+    --cohere-dim: #1a2a4a;
+    --groq: #e05c5c;
+    --groq-dim: #3a1a1a;
+    --arbiter: #a78bfa;
+    --arbiter-dim: #1e1a3a;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --accent: #f0c040;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ─────────────────────────── */
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  header .eyebrow {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+  header h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 900;
+    line-height: 1.1;
+  }
+  header h1 span.g { color: var(--cohere); }
+  header h1 span.x { color: var(--groq); }
+  header h1 .vs {
+    color: var(--accent);
+    font-size: 0.7em;
+    padding: 0 0.3em;
+  }
+  header p.sub {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* ── SETUP PANEL ─────────────────────── */
+  .setup {
+    max-width: 720px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .setup label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+  .setup textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    resize: none;
+    min-height: 64px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .setup textarea:focus { outline: none; border-color: var(--accent); }
+
+  .setup-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .rounds-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+
+  .btn-start {
+    flex: 1;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  .btn-start:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  .btn-start:active { transform: translateY(0); }
+  .btn-start:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-stop {
+    background: transparent;
+    border: 1px solid var(--groq);
+    color: var(--groq);
+    border-radius: 10px;
+    padding: 0.75rem 1.2rem;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: none;
+  }
+  .btn-stop:hover { background: var(--groq-dim); }
+
+  /* ── ARENA ───────────────────────────── */
+  .arena {
+    flex: 1;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .fighter-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .fighter-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .fighter-header.cohere { background: var(--cohere-dim); color: var(--cohere); border: 1px solid var(--cohere); }
+  .fighter-header.groq   { background: var(--groq-dim);   color: var(--groq);   border: 1px solid var(--groq); }
+
+  .fighter-header .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .fighter-header .badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    letter-spacing: 0.1em;
+  }
+
+  .messages-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    flex: 1;
+    min-height: 320px;
+    max-height: 420px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    animation: fadein 0.3s ease;
+  }
+  .msg.cohere { background: var(--cohere-dim); border-left: 3px solid var(--cohere); }
+  .msg.groq   { background: var(--groq-dim);   border-left: 3px solid var(--groq); }
+
+  .msg .round-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .typing-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: blink 1s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  .typing-dot.cohere { background: var(--cohere); }
+  .typing-dot.groq   { background: var(--groq); }
+
+  @keyframes blink {
+    0%, 100% { opacity: 0.2; } 50% { opacity: 1; }
+  }
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── ARBITER ─────────────────────────── */
+  .arbiter-section {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px solid var(--arbiter);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    display: none;
+  }
+  .arbiter-section.visible { display: block; }
+
+  .arbiter-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--arbiter);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .arbiter-title::before {
+    content: "⚖️";
+    font-size: 1rem;
+  }
+
+  .arbiter-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* ── STATS ───────────────────────────── */
+  .stats-bar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem 1.2rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .stat-item .stat-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .stat-item .stat-val.g { color: var(--cohere); }
+  .stat-item .stat-val.x { color: var(--groq); }
+  .stat-item .stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+  }
+
+  .word-battle {
+    flex: 1;
+    min-width: 200px;
+  }
+  .word-battle-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+  }
+  .word-bar {
+    height: 8px;
+    border-radius: 99px;
+    background: var(--border);
+    overflow: hidden;
+    display: flex;
+  }
+  .word-bar-g { background: var(--cohere); transition: width 0.5s; }
+  .word-bar-x { background: var(--groq);   transition: width 0.5s; }
+
+  .status-pill {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-family: 'Unbounded', sans-serif;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .status-pill.idle    { background: var(--border); color: var(--muted); }
+  .status-pill.running { background: #1a3a1a; color: #4ade80; }
+  .status-pill.done    { background: var(--arbiter-dim); color: var(--arbiter); }
+
+  /* ── SUGGESTIONS ─────────────────────── */
+  .suggestions {
+    max-width: 720px;
+    margin: 0 auto 0.5rem;
+    padding: 0 1rem;
+  }
+  .suggestions-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+  .chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* scrollbar */
+  .messages-box::-webkit-scrollbar { width: 4px; }
+  .messages-box::-webkit-scrollbar-track { background: transparent; }
+  .messages-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  @media (max-width: 600px) {
+    .arena { grid-template-columns: 1fr; }
+    .stats-bar { gap: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">AI duel · real-time debate</div>
+  <h1><span class="g">Cohere</span><span class="vs">VS</span><span class="x">Groq</span></h1>
+  <p class="sub">Два ИИ спорят — арбитр судит</p>
+</header>
+
+<!-- Topic input -->
+<div class="setup">
+  <div>
+    <label for="topicInput">Тема для спора</label>
+    <textarea id="topicInput" rows="2" placeholder="Например: как студенту заработать за лето на MacBook?">как студенту заработать за лето на MacBook?</textarea>
+  </div>
+  <div class="setup-row">
+    <span class="rounds-label">Раундов:</span>
+    <select id="roundsSelect">
+      <option value="3">3</option>
+      <option value="4" selected>4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </select>
+    <button class="btn-start" id="btnStart" onclick="startBattle()">⚡ НАЧАТЬ БОЙ</button>
+    <button class="btn-stop" id="btnStop" onclick="stopBattle()">✕ Стоп</button>
+  </div>
+</div>
+
+<!-- Suggestions -->
+<div class="suggestions">
+  <div class="suggestions-label">Быстрые темы</div>
+  <div class="chips">
+    <div class="chip" onclick="setTopic(this)">Фриланс vs офис для студента</div>
+    <div class="chip" onclick="setTopic(this)">Python vs JavaScript — с чего начать</div>
+    <div class="chip" onclick="setTopic(this)">Утренняя vs вечерняя пробежка</div>
+    <div class="chip" onclick="setTopic(this)">ИИ заменит программистов?</div>
+    <div class="chip" onclick="setTopic(this)">Крипта vs акции для студента</div>
+  </div>
+</div>
+
+<!-- Arena -->
+<div class="arena">
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-val g" id="statWordsG">0</span>
+      <span class="stat-label">слов Cohere</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val x" id="statWordsX">0</span>
+      <span class="stat-label">слов Groq</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="word-battle">
+      <div class="word-battle-label">Слова в бою</div>
+      <div class="word-bar">
+        <div class="word-bar-g" id="barG" style="width:50%"></div>
+        <div class="word-bar-x" id="barX" style="width:50%"></div>
+      </div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-val" id="statRound" style="color:var(--accent)">0 / 0</span>
+      <span class="stat-label">раунд</span>
+    </div>
+    <span class="status-pill idle" id="statusPill">IDLE</span>
+  </div>
+
+  <!-- Gemini col -->
+  <div class="fighter-col">
+    <div class="fighter-header cohere">
+      <div class="avatar">🔵</div>
+      Command R+
+      <span class="badge">Cohere</span>
+    </div>
+    <div class="messages-box" id="boxGemini"></div>
+  </div>
+
+  <!-- Grok col -->
+  <div class="fighter-col">
+    <div class="fighter-header groq">
+      <div class="avatar">🔴</div>
+      Llama 3.3 70B
+      <span class="badge">Groq</span>
+    </div>
+    <div class="messages-box" id="boxGrok"></div>
+  </div>
+
+  <!-- Arbiter -->
+  <div class="arbiter-section" id="arbiterSection">
+    <div class="arbiter-title">Вердикт арбитра (Mixtral 8x7B)</div>
+    <div class="arbiter-text" id="arbiterText">Анализирую дискуссию…</div>
+  </div>
+
+</div>
+
+<script>
+const API = '/api/chat';
+
+// System prompts
+const SYSTEM_GEMINI = `Ты — уверенный, немного самоуверенный ИИ-спорщик по имени Cohere. 
+Ты всегда отстаиваешь свою точку зрения энергично, с конкретными аргументами и примерами. 
+Отвечай на РУССКОМ языке. Максимум 3–4 предложения. Не соглашайся просто так — найди изъян в словах оппонента и укажи на него. 
+Будь убедительным, живым, иногда саркастичным.`;
+
+const SYSTEM_GROK = `Ты — провокационный, остроумный ИИ-спорщик по имени Groq. 
+Ты любишь нестандартные аргументы, неожиданные повороты и немного чёрный юмор. 
+Отвечай на РУССКОМ языке. Максимум 3–4 предложения. Всегда возражай оппоненту — находи слабые места и атакуй. 
+Будь дерзким и запоминающимся.`;
+
+const SYSTEM_ARBITER = `Ты — беспристрастный арбитр дебатов по имени Арбитр. 
+Твоя задача: внимательно оценить дискуссию между Cohere и Groq и вынести честный вердикт.
+Ответь на РУССКОМ языке. Структура ответа:
+1. Кто победил и почему (2–3 предложения)
+2. Самый сильный аргумент Cohere
+3. Самый сильный аргумент Groq  
+4. Итоговый счёт: Cohere X — Groq Y (из 10 по убедительности)`;
+
+let stopped = false;
+let wordsG = 0, wordsX = 0;
+
+function setTopic(el) {
+  document.getElementById('topicInput').value = el.textContent;
+}
+
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function updateWordBar() {
+  const total = wordsG + wordsX || 1;
+  document.getElementById('barG').style.width = (wordsG / total * 100) + '%';
+  document.getElementById('barX').style.width = (wordsX / total * 100) + '%';
+  document.getElementById('statWordsG').textContent = wordsG;
+  document.getElementById('statWordsX').textContent = wordsX;
+}
+
+function setStatus(s) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + s;
+  pill.textContent = s === 'idle' ? 'IDLE' : s === 'running' ? '● ИДЁТ БОЙ' : '✓ ЗАВЕРШЁН';
+}
+
+function addTyping(box, cls) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.id = 'typing-' + cls;
+  div.innerHTML = `<span class="typing-dot ${cls}"></span><span class="typing-dot ${cls}"></span><span class="typing-dot ${cls}"></span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function removeTyping(cls) {
+  const el = document.getElementById('typing-' + cls);
+  if (el) el.remove();
+}
+
+function addMessage(box, cls, round, text) {
+  removeTyping(cls);
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.innerHTML = `<div class="round-label">Раунд ${round}</div>${escHtml(text)}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function callBot(model, messages, system) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ model, messages, system })
+  });
+  const data = await r.json();
+  if (data.error) throw new Error(data.error);
+  return data.text;
+}
+
+async function startBattle() {
+  const topic = document.getElementById('topicInput').value.trim();
+  const rounds = parseInt(document.getElementById('roundsSelect').value);
+  if (!topic) { alert('Введи тему для спора!'); return; }
+
+  // Reset UI
+  stopped = false;
+  wordsG = 0; wordsX = 0;
+  document.getElementById('boxGemini').innerHTML = '';
+  document.getElementById('boxGrok').innerHTML = '';
+  document.getElementById('arbiterSection').classList.remove('visible');
+  document.getElementById('arbiterText').textContent = 'Анализирую дискуссию…';
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').style.display = 'inline-block';
+  setStatus('running');
+  updateWordBar();
+
+  const historyG = []; // messages as seen by Gemini
+  const historyX = []; // messages as seen by Grok
+  const fullLog  = []; // for arbiter
+
+  const boxG = document.getElementById('boxGemini');
+  const boxX = document.getElementById('boxGrok');
+
+  // Opening prompt
+  const openingG = `Тема дискуссии: "${topic}". Начни спор — изложи свою позицию.`;
+  const openingX = `Тема дискуссии: "${topic}". Сейчас твой оппонент Gemini изложил свои аргументы. Возрази ему и отстаивай свою позицию.`;
+
+  for (let round = 1; round <= rounds; round++) {
+    if (stopped) break;
+    document.getElementById('statRound').textContent = `${round} / ${rounds}`;
+
+    // ── Gemini turn ──────────────────────
+    {
+      const userMsg = round === 1
+        ? openingG
+        : `Оппонент (Grok) сказал: "${fullLog[fullLog.length - 1]}". Ответь ему — продолжай отстаивать свою позицию по теме "${topic}".`;
+
+      addTyping(boxG, 'cohere');
+      historyG.push({ role: 'user', content: userMsg });
+
+      let gReply;
+      try {
+        gReply = await callBot('cohere', historyG, SYSTEM_GEMINI);
+      } catch(e) {
+        removeTyping('cohere');
+        addMessage(boxG, 'cohere', round, '⚠ Ошибка: ' + e.message);
+        break;
+      }
+      if (stopped) { removeTyping('cohere'); break; }
+
+      historyG.push({ role: 'assistant', content: gReply });
+      fullLog.push('Gemini: ' + gReply);
+      wordsG += countWords(gReply);
+      updateWordBar();
+      addMessage(boxG, 'cohere', round, gReply);
+      await delay(400);
+    }
+
+    if (stopped) break;
+
+    // ── Grok turn ────────────────────────
+    {
+      const userMsg = round === 1
+        ? openingX.replace('изложил свои аргументы', `сказал: "${fullLog[fullLog.length-1]}"`)
+        : `Оппонент (Gemini) сказал: "${fullLog[fullLog.length - 1]}". Ответь ему — продолжай отстаивать свою позицию по теме "${topic}".`;
+
+      addTyping(boxX, 'groq');
+      historyX.push({ role: 'user', content: userMsg });
+
+      let xReply;
+      try {
+        xReply = await callBot('groq', historyX, SYSTEM_GROK);
+      } catch(e) {
+        removeTyping('groq');
+        addMessage(boxX, 'groq', round, '⚠ Ошибка: ' + e.message);
+        break;
+      }
+      if (stopped) { removeTyping('groq'); break; }
+
+      historyX.push({ role: 'assistant', content: xReply });
+      fullLog.push('Grok: ' + xReply);
+      wordsX += countWords(xReply);
+      updateWordBar();
+      addMessage(boxX, 'groq', round, xReply);
+      await delay(400);
+    }
+  }
+
+  if (stopped) {
+    setStatus('idle');
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').style.display = 'none';
+    return;
+  }
+
+  // ── Arbiter ──────────────────────────
+  setStatus('done');
+  document.getElementById('arbiterSection').classList.add('visible');
+
+  const arbiterPrompt = `Вот полный текст дискуссии на тему "${topic}":\n\n${fullLog.join('\n\n')}\n\nВынеси вердикт.`;
+
+  try {
+    const verdict = await callBot('arbiter', [{ role: 'user', content: arbiterPrompt }], SYSTEM_ARBITER);
+    document.getElementById('arbiterText').innerHTML = verdict.replace(/\n/g, '<br>');
+  } catch(e) {
+    document.getElementById('arbiterText').textContent = '⚠ Арбитр недоступен: ' + e.message;
+  }
+
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').style.display = 'none';
+}
+
+function stopBattle() {
+  stopped = true;
+}
+
+function delay(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+</script>
+</body>
+</html>
